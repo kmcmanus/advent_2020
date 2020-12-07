@@ -1,12 +1,15 @@
 
+def bag_name(name):
+    return name.replace("bags", "bag")
+
 class ChildBag(object):
     def __init__(self, line):
         bits = line.split()
-        self.quantity = int(bits[0])
-        self.bag = " ".join(bits[1:])
+        self.count = int(bits[0])
+        self.bag = bag_name(" ".join(bits[1:]))
 
     def __str__(self):
-        return f"{self.quantity} {self.bag}"
+        return f"{self.count} {self.bag}"
 class Rule(object):
     def __init__(self, line):
         self.line = line
@@ -14,7 +17,7 @@ class Rule(object):
 
     def process_line(self, line):
         bits = line.split(" contain ")
-        self.bag = bits[0]
+        self.bag = bag_name(bits[0])
         if bits[1] == "no other bags.":
             self.children = []
         else:
@@ -31,12 +34,40 @@ with open('input', 'r') as f:
         for line in all_data.split("\n")
         if line
     ]
+children_by_bag = {
+        r.bag: [c.bag for c in r.children]
+        for r in rules
+        }
 rule_by_bag = {
-        r.bag: r.children
+        r.bag: r
         for r in rules
         }
 
-def can_contain(parent_bag, child_bag, so_far=[]):
+def traverse(bag, tree):
+    results = []
+    for child in tree.get(bag, []):
+        results.append(child)
+        results.extend(traverse(child, tree))
+    return results
 
+traversed_bags = {
+        r.bag: traverse(r.bag, children_by_bag)
+        for r in rules
+        }
+print("one")
+print(sum([
+    1
+    for (bag, kids) in traversed_bags.items()
+    if "shiny gold bag" in kids
+]))
 
-print(rule_by_bag)
+memo = {}
+def count(bag, tree):
+    results = 0
+    for child in tree.get(bag, []).children:
+        recurse = memo.get(child.bag, count(child.bag, tree))
+        results += child.count + child.count * recurse
+        memo[child.bag] = recurse
+    return results
+print("two")
+print(count("shiny gold bag", rule_by_bag))
