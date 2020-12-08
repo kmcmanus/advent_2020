@@ -46,9 +46,6 @@ class Accumulate(Operation):
         super().step(current_step, accumulator, program)
         return (current_step + 1, accumulator + self.value)
 
-def clone(program):
-    return list(map(copy.copy, program))
-
 def execute(program):
     current_step = 0
     accumulator = 0
@@ -60,32 +57,34 @@ def execute(program):
         )
     return accumulator
 
-with open('input', 'r') as f:
-    all_data = f.read()
-    program = [
-        Operation.load(line.strip())
-        for line in all_data.split("\n")
-        if line
-    ]
+def read_program():
+    with open('input', 'r') as f:
+        all_data = f.read()
+        program = [
+            Operation.load(line.strip())
+            for line in all_data.split("\n")
+            if line
+        ]
+        return program
 print("one")
+res = -1
 try:
-    execute(program)
+    res = execute(read_program())
 except InfiniteLoopDetected as i:
     print(i.accumulator)
+print(res)
 
 print("two")
-for (i, step) in enumerate(program):
+for (i, step) in enumerate(read_program()):
     if step.operation == 'acc':
         continue
-    temp_prog = clone(program)
-    print(temp_prog[i])
+    temp_prog = read_program()
     temp_prog[i] = temp_prog[i].invert()
-    print(temp_prog[i])
     try:
         acc = execute(temp_prog)
     except InfiniteLoopDetected as ex:
-        print(i, ex)
         continue
+    print("won!")
     print(acc)
     break
 
