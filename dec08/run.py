@@ -1,14 +1,44 @@
-import copy
 class InfiniteLoopDetected(BaseException):
     def __init__(self, step, accumulator):
         self.step = step
         self.accumulator = accumulator
+
+class Program(object):
+    def __init__(self, path='input'):
+        self.path = path
+        self.reload()
+
+    def reload(self):
+        with open(self.path, 'r') as f:
+            all_data = f.read()
+            program = [
+                Operation.load(line.strip())
+                for line in all_data.split("\n")
+                if line
+            ]
+            self.steps = program
+
+    def execute(self):
+        program = list(map(lambda s: s.reset(), self.steps))
+        current_step = 0
+        accumulator = 0
+        while current_step < len(program):
+            (current_step, accumulator) = program[current_step].step(
+                    current_step,
+                    accumulator,
+                    program
+            )
+        return accumulator
 
 class Operation(object):
     def __init__(self, operation, value):
         self.value = value
         self.visits = 0
         self.operation = operation
+
+    def reset(self):
+        self.visits = 0
+        return self
 
     @classmethod
     def load(cls, line):
@@ -31,6 +61,7 @@ class NoOp(Operation):
     def step(self, current_step, accumulator, program):
         super().step(current_step, accumulator, program)
         return (current_step + 1, accumulator)
+
     def invert(self):
         return Jump("jmp", self.value)
 
@@ -38,6 +69,7 @@ class Jump(Operation):
     def step(self, current_step, accumulator, program):
         super().step(current_step, accumulator, program)
         return (current_step + self.value, accumulator)
+
     def invert(self):
         return NoOp("nop", self.value)
 
@@ -46,43 +78,23 @@ class Accumulate(Operation):
         super().step(current_step, accumulator, program)
         return (current_step + 1, accumulator + self.value)
 
-def execute(program):
-    current_step = 0
-    accumulator = 0
-    while current_step < len(program):
-        (current_step, accumulator) = program[current_step].step(
-                current_step,
-                accumulator,
-                program
-        )
-    return accumulator
 
-def read_program():
-    with open('input', 'r') as f:
-        all_data = f.read()
-        program = [
-            Operation.load(line.strip())
-            for line in all_data.split("\n")
-            if line
-        ]
-        return program
 print("one")
-res = -1
+program = Program()
 try:
-    res = execute(read_program())
+    res = program.execute()
 except InfiniteLoopDetected as i:
     print(i.accumulator)
-print(res)
 
 print("two")
-for (i, step) in enumerate(read_program()):
+for (i, step) in enumerate(program.steps):
     if step.operation == 'acc':
         continue
-    temp_prog = read_program()
-    temp_prog[i] = temp_prog[i].invert()
+    program.steps[i] = program.steps[i].invert()
     try:
-        acc = execute(temp_prog)
+        acc = program.execute()
     except InfiniteLoopDetected as ex:
+        program.steps[i] = program.steps[i].invert()
         continue
     print("won!")
     print(acc)
