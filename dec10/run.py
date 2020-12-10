@@ -1,13 +1,5 @@
 import functools
 
-def memo(func):
-  res = {}
-  def wrapped(*args):
-    if not args in res:
-      args[res] = func(res)
-    return args[res]
-  return wrapped
-
 def lengthed_iteration(data, length):
     return (
       data[start:start+length]
