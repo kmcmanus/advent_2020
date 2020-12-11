@@ -7,7 +7,7 @@ adjacents = [
 ]
 
 class Board(object):
-    def __init__(self, path, look=0):
+    def __init__(self, path, look=1):
         self.path = path
         self.look = look
         self.board_data = self.load(path)
@@ -33,6 +33,7 @@ class Board(object):
         return (self, changed)
 
     def draw(self):
+        print('-----------')
         for row in self.board_data:
             print("".join(str(pos) for pos in row))
 
@@ -77,9 +78,17 @@ class Position(object):
         self.x = x
         self.y = y
 
-    def get_adjacent_positions(self):
-        for dx, dy in adjacents:
-            yield self.x + dx, self.y + dy
+    def count_seen_chairs(self, direction, board):
+        (x, y) = direction
+        for distance in range(1, board.look):
+            nx = self.x + (x * distance)
+            ny = self.y + (y * distance)
+            pos = str(board.index(nx, ny))
+            if pos == EmptyChair.char:
+                return 0
+            elif pos == OccupiedChair.char:
+                return 1
+        return 0
 
     char = " "
     def __str__(self):
@@ -95,9 +104,8 @@ class EmptyChair(Position):
     char = "L"
     def update(self, board):
         occ = 0
-        for x, y in self.get_adjacent_positions():
-            if str(board.index(x, y)) == OccupiedChair.char:
-                occ += 1
+        for direction in adjacents:
+            occ += self.count_seen_chairs(direction, board)
         if occ == 0:
             return OccupiedChair(self.x, self.y)
 
@@ -105,17 +113,16 @@ class OccupiedChair(Position):
     char = "#"
     def update(self, board):
         occupied = 0
-        for x, y in self.get_adjacent_positions():
-            if str(board.index(x, y)) == OccupiedChair.char:
-                occupied += 1
-        if occupied >= 4:
+        for direction in adjacents:
+            occupied += self.count_seen_chairs(direction, board)
+        if occupied >= 5:
             return EmptyChair(self.x, self.y)
 
-board = Board('input', 0).run()
-print("one")
-print(sum([
+board = Board('input', 500).run()
+num = sum([
     1
     for row in board.board_data
     for pos in row
     if str(pos) == "#"
-]))
+])
+print(num)
