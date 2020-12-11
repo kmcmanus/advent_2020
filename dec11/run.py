@@ -5,6 +5,63 @@ adjacents = [
     for y in (-1, 0, 1)
     if x != 0 or y != 0
 ]
+
+class Board(object):
+    def __init__(self, path, look=0):
+        self.path = path
+        self.look = look
+        self.board_data = self.load(path)
+
+    def update(self):
+        changed = False
+        new_board = [
+            [
+                None
+                for char in line
+            ]
+            for line in self.board_data
+            if line
+        ]
+        for y, row in enumerate(self.board_data):
+            for x, position in enumerate(row):
+                new_pos = position.update(self)
+                if new_pos:
+                    changed = True
+                    position = new_pos
+                new_board[y][x] = position
+        self.board_data = new_board
+        return (self, changed)
+
+    def draw(self):
+        for row in self.board_data:
+            print("".join(str(pos) for pos in row))
+
+    def index(self, x, y):
+        if x < 0 or y < 0:
+            return None
+        try:
+            return self.board_data[y][x]
+        except:
+            return None
+
+    def load(self, path):
+        with open('input', 'r') as f:
+            all_data = f.read()
+            board = [
+                [
+                    Position.build(char, x, y)
+                    for x, char in enumerate(line)
+                ]
+                for y, line in enumerate(all_data.split("\n"))
+                if line
+            ]
+        return board
+    def run(self):
+        just_changed = True
+        while just_changed:
+            self, just_changed = self.update()
+        return self
+
 class Position(object):
     @classmethod
     def build(cls, char, x, y):
@@ -39,7 +96,7 @@ class EmptyChair(Position):
     def update(self, board):
         occ = 0
         for x, y in self.get_adjacent_positions():
-            if str(index_board(board, x, y)) == OccupiedChair.char:
+            if str(board.index(x, y)) == OccupiedChair.char:
                 occ += 1
         if occ == 0:
             return OccupiedChair(self.x, self.y)
@@ -49,60 +106,16 @@ class OccupiedChair(Position):
     def update(self, board):
         occupied = 0
         for x, y in self.get_adjacent_positions():
-            if str(index_board(board, x, y)) == OccupiedChair.char:
+            if str(board.index(x, y)) == OccupiedChair.char:
                 occupied += 1
         if occupied >= 4:
             return EmptyChair(self.x, self.y)
 
-def update_board(board):
-    changed = False
-    new_board = [
-        [
-            None
-            for char in line
-        ]
-        for line in board
-        if line
-    ]
-    for y, row in enumerate(board):
-        for x, position in enumerate(row):
-            new_pos = position.update(board)
-            if new_pos:
-                changed = True
-                position = new_pos
-            new_board[y][x] = position
-    return (new_board, changed)
-
-def draw_board(board):
-    for row in board:
-        print("".join(str(pos) for pos in row))
-
-def index_board(board, x, y):
-    if x < 0 or y < 0:
-        return None
-    try:
-        return board[y][x]
-    except IndexError:
-        return None
-
-with open('input', 'r') as f:
-    all_data = f.read()
-    board = [
-        [
-            Position.build(char, x, y)
-            for x, char in enumerate(line)
-        ]
-        for y, line in enumerate(all_data.split("\n"))
-        if line
-    ]
-just_changed = True
-while just_changed:
-    board, just_changed = update_board(board)
-
+board = Board('input', 0).run()
 print("one")
 print(sum([
     1
-    for row in board
+    for row in board.board_data
     for pos in row
     if str(pos) == "#"
 ]))
